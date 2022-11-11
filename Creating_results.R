@@ -31,7 +31,7 @@ datacossim2 <- datacossim %>%
 dataeucdis2 <- dataeucdis %>%
   filter(!is.na(good))
 
-#Creating a new dataframe where 
+#Creating a new dataframe where the sentiment scores are calculated as described in the paper
 datalikcossim <- datacossim2 %>%
   group_by(name) %>%
   summarize(V = (good - bad) / (1 - 0.7190051), A = (active - passive) / (1 - 0.43619528) , D = (dominant - submissive) / (0.27168104) )
@@ -40,7 +40,7 @@ datalikeucdis <- dataeucdis2 %>%
   group_by(name) %>%
   summarize(V = (bad - good) / (1.802906), A = (passive - active) / (2.900496) , D = (submissive - dominant) / (3.821561) )
 
-#
+#Normalizing the results to be from 0 to 1
 datalikerttot <- datalikcossim %>%
   group_by(name) %>%
   summarize(v = (V + 1) / 2, a = (A + 1) / 2, d = (D + 1) / 2)
@@ -49,14 +49,9 @@ datalikeuctot <- datalikeucdis %>%
   group_by(name) %>%
   summarize(v = (V + 1) / 2, a = (A + 1) / 2, d = (D + 1) / 2)
 
+#Adding the NRC scores to the dataframe and filtering out the duplicated words and words that don't have a score
 datatota <- merge(datalikerttot, dataNRC, by.x = "name", by.y = "names")
-
-datatota <- datatota %>%
-  filter(!is.na(v))
-
 datatotaed <- merge(datalikeuctot, dataNRC, by.x = "name", by.y = "names")
-
-datatotaed$extra <- !(is.na(as.numeric(datatotaed$v_NRC))) 
 
 datatotaed <- datatotaed %>%
   filter(!(is.na(as.numeric(v_NRC))))
@@ -67,7 +62,7 @@ datatota <- datatota %>%
 datatota <- datatota[!duplicated(datatota),]
 datatotaed <- datatotaed[!duplicated(datatotaed),]
 
-#Correlaties en plots voor cosine similarity met voledige dataset
+#Correlations and plots for Cosine Similarity (CS)
 datatota$v_NRC <- as.numeric(datatota$v_NRC)
 cossimplotV <- ggplot(data = datatota, aes(y = v, x = v_NRC)) +
   geom_point() +
@@ -91,7 +86,7 @@ cossimspearmanV <- cor.test(datatota$v, datatota$v_NRC, method = "spearman", exa
 cossimspearmanA <- cor.test(datatota$a, datatota$a_NRC, method = "spearman", exact = FALSE)
 cossimspearmanD <- cor.test(datatota$d, datatota$d_NRC, method = "spearman", exact = FALSE)
 
-#Correlaties en plots voor euclidean distance met volledige dataset
+#Correlations and plots for Euclidean Distance (ED)
 datatotaed$v_NRC <- as.numeric(datatotaed$v_NRC)
 eucdisplotV <- ggplot(data = datatotaed, aes(y = v, x = v_NRC)) +
   geom_point() +
@@ -115,12 +110,12 @@ eucdisspearmanV <- cor.test(datatotaed$v, datatotaed$v_NRC, method = "spearman",
 eucdisspearmanA <- cor.test(datatotaed$a, datatotaed$a_NRC, method = "spearman", exact = FALSE)
 eucdisspearmanD <- cor.test(datatotaed$d, datatotaed$d_NRC, method = "spearman", exact = FALSE)
 
-#maken van de POS-Tagger
+#Creating the POS-Tagger by downloading the english model from udpipe
 m_eng   <- udpipe::udpipe_download_model(language = "english-ewt")
 ud_model <- udpipe_load_model(m_eng$file_model)
 engword <- as.data.frame(udpipe_annotate(ud_model, x = datatota$name))
 
-#maken van de adjective sets
+#Creating the Adjectives dataframes for Cosine Similarity and Euclidean Distance
 datatotapos <- merge(datatota, engword, by.x = "name", by.y = "token")
 datatotaedpos <- merge(datatotaed, engword, by.x = "name", by.y = "token")
 
@@ -130,7 +125,7 @@ datatotapos <- datatotapos %>%
 datatotaedpos <- datatotaedpos %>%
   filter(upos == "ADJ")
 
-#Correlaties en plots voor Cosine similarity voor alleen de Adjectives
+#Correlations and plots for Cosine Similarity Adjectives (CSA)
 cossimplotVadj <- ggplot(data = datatotapos, aes(y = v, x = v_NRC)) +
   geom_point() +
   geom_smooth(method = 'lm') +
@@ -151,7 +146,7 @@ cossimspearmanVadj <- cor.test(datatotapos$v, datatotapos$v_NRC, method = "spear
 cossimspearmanAadj <- cor.test(datatotapos$a, datatotapos$a_NRC, method = "spearman", exact = FALSE)
 cossimspearmanDadj <- cor.test(datatotapos$d, datatotapos$d_NRC, method = "spearman", exact = FALSE)
 
-#Correlaties en plots voor Euclidean Distance en
+#Correlations and plots for Euclidean Distance Adjectives (EDA)
 eucdisplotVadj <- ggplot(data = datatotaedpos, aes(y = v, x = v_NRC)) +
   geom_point() +
   geom_smooth(method = 'lm') +
@@ -172,23 +167,22 @@ eucdisspearmanVadj <- cor.test(datatotaedpos$v, datatotaedpos$v_NRC, method = "s
 eucdisspearmanAadj <- cor.test(datatotaedpos$a, datatotaedpos$a_NRC, method = "spearman", exact = FALSE)
 eucdisspearmanDadj <- cor.test(datatotaedpos$d, datatotaedpos$d_NRC, method = "spearman", exact = FALSE)
 
-#valence formule's
+#Calculating the regression lines for:
+#Valence
 lm(datatota$v ~ datatota$v_NRC)
 lm(datatotaed$v ~ datatotaed$v_NRC)
 lm(datatotaedpos$v ~ datatotaedpos$v_NRC)
 lm(datatotapos$v ~ datatotapos$v_NRC)
 valplot <- ggplot()
 
-#arousal formule's
+#Arousal
 lm(datatota$a ~ datatota$a_NRC)
 lm(datatotaed$a ~ datatotaed$a_NRC)
 lm(datatotaedpos$a ~ datatotaedpos$a_NRC)
 lm(datatotapos$a ~ datatotapos$a_NRC)
 
-#dominance formule's
+#Dominance
 lm(datatota$d ~ datatota$d_NRC)
 lm(datatotaed$d ~ datatotaed$d_NRC)
 lm(datatotaedpos$d ~ datatotaedpos$d_NRC)
 lm(datatotapos$d ~ datatotapos$d_NRC)
-
-acc <- polr(v ~ v_NRC,data = datatota, Hess = TRUE)
