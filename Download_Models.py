@@ -3,10 +3,10 @@ import gensim.models
 import gensim.downloader
 from scipy.spatial import distance
 
-#Loading the google news model from gensim
+#Loading the google news model from gensim.
 google_news_vectors = gensim.downloader.load('word2vec-google-news-300')
 
-#Open the text file containing the NRC-VAD lexicon
+#Open the text file containing the NRC-VAD lexicon.
 with open("NRC-VAD-Lexicon.txt") as f:
     contents = f.readlines()
 
@@ -20,7 +20,7 @@ for x in contents:
 seedlist = ['good','bad','active','passive', 'dominant', 'submissive']
 
 #Creating a csv file containing the cosine similarities between the words in thelist and the seedwords, if a specific word doesn't return a value it will
-#return an empty line
+#return an empty line.
 with open('resultscs.csv', 'w') as f:
     writer = csv.writer(f)
     writer.writerow(['name','good','bad', 'active', 'passive', 'dominant', 'submissive'])
